@@ -1,0 +1,6 @@
+{
+  "name": "E-Commerce Store",
+  "description": "Production e-commerce catalog featuring live product listings, instant search, detailed specifications, full cart management, and secure account mock sign-in.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
