@@ -1,33 +1,48 @@
-import React, { useState } from "react";
-import { BrowserRouter, Routes, Route, Link, NavLink, useLocation } from "react-router-dom";
-import { Provider } from "react-redux";
-import { store } from "./store";
-import { useAppDispatch, useAppSelector } from "./store/hooks";
-import { setCartOpen } from "./store/slices/cartSlice";
-import { logout } from "./store/slices/authSlice";
+"use client";
 
-// Page Components
-import { Home } from "./pages/Home";
-import { Catalog } from "./pages/Catalog";
-import { ProductDetail } from "./pages/ProductDetail";
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { setCartOpen } from "../store/slices/cartSlice";
+import { logout } from "../store/slices/authSlice";
 
 // Layout overlays
-import { CartDrawer } from "./components/CartDrawer";
-import { AuthModal } from "./components/AuthModal";
+import { CartDrawer } from "../components/CartDrawer";
+import { AuthModal } from "../components/AuthModal";
 
 // Interactive Icons
-import { ShoppingBag, Lock, LogOut, Heart, Search, HelpCircle, ShieldCheck } from "lucide-react";
+import {
+  ShoppingBag,
+  Lock,
+  LogOut,
+  Search,
+  ShieldCheck,
+  Calendar,
+} from "lucide-react";
 
-const NavigationHeader: React.FC = () => {
+interface ClientLayoutWrapperProps {
+  children: React.ReactNode;
+}
+
+export default function ClientLayoutWrapper({ children }: ClientLayoutWrapperProps) {
+  const pathname = usePathname();
+  const router = useRouter();
   const dispatch = useAppDispatch();
+  
   const cartItemsCount = useAppSelector((state) =>
     state.cart.items.reduce((sum, item) => sum + item.quantity, 0)
   );
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
   const [isAuthOpen, setIsAuthOpen] = useState(false);
 
+  // Smooth scroll to top on page switches
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [pathname]);
+
   return (
-    <>
+    <div className="min-h-screen bg-neutral-50/50 flex flex-col font-sans">
       {/* 1. Global Announcement Micro Bar */}
       <div className="bg-slate-900 text-white py-2 px-4 text-center text-[10px] font-medium tracking-wider uppercase flex items-center justify-center space-x-1 sm:space-x-3 select-none">
         <span>📦 Free express priority shipping on purchases above $150</span>
@@ -44,7 +59,7 @@ const NavigationHeader: React.FC = () => {
           
           {/* Logo Brand Title */}
           <Link
-            to="/"
+            href="/"
             className="flex items-center space-x-2 tracking-wider font-sans group"
           >
             <div className="relative h-8 w-8 bg-slate-900 rounded-lg flex items-center justify-center text-white font-black text-sm shadow group-hover:scale-105 transition-transform">
@@ -58,30 +73,32 @@ const NavigationHeader: React.FC = () => {
 
           {/* Center Links (Catalog Index shortcuts) */}
           <nav className="hidden md:flex items-center space-x-8 text-xs font-semibold uppercase tracking-wider text-gray-500">
-            <NavLink
-              to="/"
-              className={({ isActive }) =>
-                `hover:text-slate-900 transition-colors ${isActive ? "text-slate-900 underline underline-offset-4 decoration-2" : ""}`
-              }
+            <Link
+              href="/"
+              className={`hover:text-slate-900 transition-colors ${
+                pathname === "/" ? "text-slate-900 underline underline-offset-4 decoration-2" : ""
+              }`}
             >
               Overview
-            </NavLink>
-            <NavLink
-              to="/products"
-              className={({ isActive }) =>
-                `hover:text-slate-900 transition-colors ${isActive ? "text-slate-900 underline underline-offset-4 decoration-2" : ""}`
-              }
+            </Link>
+            <Link
+              href="/products"
+              className={`hover:text-slate-900 transition-colors ${
+                pathname?.startsWith("/products") && !pathname?.includes("?category")
+                  ? "text-slate-900 underline underline-offset-4 decoration-2"
+                  : ""
+              }`}
             >
               Browse Catalog
-            </NavLink>
+            </Link>
             <Link
-              to="/products?category=smartphones"
+              href="/products?category=smartphones"
               className="hover:text-slate-900 transition-colors"
             >
               Electronics
             </Link>
             <Link
-              to="/products?category=fragrances"
+              href="/products?category=fragrances"
               className="hover:text-slate-900 transition-colors"
             >
               Cosmetics
@@ -92,7 +109,7 @@ const NavigationHeader: React.FC = () => {
           <div className="flex items-center space-x-3.5">
             {/* Search shortcut navigates to Catalog list */}
             <Link
-              to="/products"
+              href="/products"
               title="Search directory"
               className="p-2 bg-gray-50 hover:bg-gray-100/80 rounded-xl text-gray-700 transition-colors cursor-pointer border border-transparent hover:border-gray-100"
             >
@@ -158,36 +175,14 @@ const NavigationHeader: React.FC = () => {
         </div>
       </header>
 
-      {/* Global modal triggers */}
-      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
-    </>
-  );
-};
-
-export function PureAppLayout() {
-  const { pathname } = useLocation();
-
-  // Scroll to view tops on path changes automatically
-  React.useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [pathname]);
-
-  return (
-    <div className="min-h-screen bg-neutral-50/50 flex flex-col font-sans">
-      {/* Dynamic Header */}
-      <NavigationHeader />
-
-      {/* Main Container */}
+      {/* Main Page Content Injector */}
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-8 py-8">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/products" element={<Catalog />} />
-          <Route path="/products/:id" element={<ProductDetail />} />
-        </Routes>
+        {children}
       </main>
 
       {/* Sticky overlays */}
       <CartDrawer />
+      <AuthModal isOpen={isAuthOpen} onClose={() => setIsAuthOpen(false)} />
 
       {/* Modern Aesthetic Footer */}
       <footer className="border-t border-gray-100 bg-white py-12 px-6 sm:px-12 select-none text-left">
@@ -213,10 +208,10 @@ export function PureAppLayout() {
           <div className="space-y-3.5">
             <h4 className="text-[11px] font-bold text-gray-900 uppercase tracking-widest">Catalog Index</h4>
             <div className="flex flex-col space-y-2.5 text-xs text-gray-500">
-              <Link to="/products?category=beauty" className="hover:text-slate-900 transition-colors">Beauty line</Link>
-              <Link to="/products?category=fragrances" className="hover:text-slate-900 transition-colors">Fragrances</Link>
-              <Link to="/products?category=laptops" className="hover:text-slate-900 transition-colors">Laptops</Link>
-              <Link to="/products" className="hover:text-slate-900 transition-colors">All Products List</Link>
+              <Link href="/products?category=beauty" className="hover:text-slate-900 transition-colors">Beauty line</Link>
+              <Link href="/products?category=fragrances" className="hover:text-slate-900 transition-colors">Fragrances</Link>
+              <Link href="/products?category=laptops" className="hover:text-slate-900 transition-colors">Laptops</Link>
+              <Link href="/products" className="hover:text-slate-900 transition-colors">All Products List</Link>
             </div>
           </div>
 
@@ -225,7 +220,7 @@ export function PureAppLayout() {
             <h4 className="text-[11px] font-bold text-gray-900 uppercase tracking-widest">Platform Integrity</h4>
             <div className="space-y-1">
               <p className="text-xs text-gray-500 font-sans leading-relaxed">
-                Authored securely utilizing React Vite single page routing. Core persistence synced with client localStorage.
+                Authored securely utilizing modern React Next.js App Router. Core persistence synced with client localStorage.
               </p>
               <div className="pt-2.5">
                 <span className="inline-flex items-center space-x-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-800 rounded font-mono text-[10px] border border-emerald-100">
@@ -247,15 +242,5 @@ export function PureAppLayout() {
         </div>
       </footer>
     </div>
-  );
-}
-
-export default function App() {
-  return (
-    <Provider store={store}>
-      <BrowserRouter>
-        <PureAppLayout />
-      </BrowserRouter>
-    </Provider>
   );
 }
